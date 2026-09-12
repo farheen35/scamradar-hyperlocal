@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScamRadar — Hyperlocal Community Fraud Radar</title>
+  <meta name="description" content="Identify suspicious messages, view hyperlocal community scam reports, and protect your neighborhood from digital fraud.">
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2'><circle cx='12' cy='12' r='9'/><path d='M12 3a9 9 0 0 1 9 9'/><circle cx='12' cy='12' r='3'/><path d='M12 12 18.5 5.5'/></svg>">
+
+  <!-- ScamRadar Stylesheet -->
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+      <div class="header-container">
+        <div class="brand-block" id="nav-brand" role="button" tabindex="0">
+          <div class="radar-beacon">
+            <span class="beacon-pulse"></span>
+            <svg class="beacon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M12 3a9 9 0 0 1 9 9"/>
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 12 18.5 5.5"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">ScamRadar</span>
+            <span class="brand-tag">Community Shield</span>
+          </div>
+        </div>
+
+        <nav class="nav-links" id="desktop-nav">
+          <button class="nav-btn active" data-tab="dashboard-view" id="nav-dashboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+          </button>
+          <button class="nav-btn" data-tab="checker-view" id="nav-checker">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Check a Scam
+          </button>
+          <button class="nav-btn" data-tab="map-view" id="nav-map">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+            Scam Map
+          </button>
+          <button class="nav-btn" data-tab="alerts-view" id="nav-alerts">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Alerts
+            <span class="alert-badge-count" id="header-alert-count">0</span>
+          </button>
+          <button class="nav-btn" data-tab="report-view" id="nav-report">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            Report Scam
+          </button>
+          <button class="nav-btn" data-tab="settings-view" id="nav-settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+          </button>
+        </nav>
+
+        <!-- Quick Primary Action -->
+        <div class="header-action">
+          <button class="btn btn-primary btn-sm" id="btn-quick-check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Quick Check
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Synthetic Demo Banner Notice -->
+    <div class="synthetic-notice-bar" role="alert">
+      <div class="synthetic-notice-content">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span><strong>Notice:</strong> Seeded community records use synthetic demo data — not real-world incident reports. ScamRadar uses approximate coordinates to protect privacy.</span>
+      </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="main-content">
+
+      <!-- ================= SECTION 1: DASHBOARD ================= -->
+      <section id="dashboard-view" class="view-panel active">
+        <!-- Hero Banner -->
+        <div class="hero-card">
+          <div class="hero-content">
+            <div class="hero-pill">
+              <span class="live-dot"></span> Hyperlocal Community Fraud Radar
+            </div>
+            <h1 class="hero-title">Know the scam before it costs you.</h1>
+            <p class="hero-subtitle">
+              Check suspicious messages, discover local scam reports, and help protect your community.
+            </p>
+            <div class="hero-cta-group">
+              <button class="btn btn-primary btn-lg" id="btn-hero-check">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Check a suspicious message
+              </button>
+              <button class="btn btn-secondary btn-lg" id="btn-hero-map">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
+                View scam map
+              </button>
+            </div>
+          </div>
+          <div class="hero-badge-box">
+            <div class="hero-stat-bubble">
+              <div class="hero-stat-label">Coverage Region</div>
+              <div class="hero-stat-val">Hyderabad Zone</div>
+              <div class="hero-stat-sub">Approximate Localities</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metrics Grid (From SQLite) -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon-wrap icon-total">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="stat-meta">
+              <span class="stat-label">Total Reports</span>
+              <span class="stat-number" id="stat-total-reports">--</span>
+              <span class="stat-helper">Community & demo logs</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon-wrap icon-high">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div class="stat-meta">
+              <span class="stat-label">High Risk Reports</span>
+              <span class="stat-number color-high" id="stat-high-risk">--</span>
+              <span class="stat-helper">Score 70–100 flagged</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon-wrap icon-medium">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div class="stat-meta">
+              <span class="stat-label">Medium Risk Reports</span>
+              <span class="stat-number color-medium" id="stat-medium-risk">--</span>
+              <span class="stat-helper">Score 40–69 flagged</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon-wrap icon-alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </div>
+            <div class="stat-meta">
+              <span class="stat-label">Active Alerts</span>
+              <span class="stat-number color-alert" id="stat-active-alerts">--</span>
+              <span class="stat-helper">Clustered patterns</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard Two-Column Section -->
+        <div class="dashboard-columns">
+          
+          <!-- Recent Community Alerts -->
+          <div class="column-card">
+            <div class="card-header">
+              <div class="card-header-left">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+                <h2>Recent Community Alerts</h2>
+              </div>
+              <button class="btn-text-action" id="btn-view-all-alerts">View All &rarr;</button>
+            </div>
+            <div class="card-body" id="dashboard-alerts-container">
+              <div class="loading-placeholder">Loading alerts...</div>
+            </div>
+          </div>
+
+          <!-- Recent Incident Reports -->
+          <div class="column-card">
+            <div class="card-header">
+              <div class="card-header-left">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <h2>Recent Reports Feed</h2>
+              </div>
+              <button class="btn-text-action" id="btn-dashboard-report">Report a Scam &plus;</button>
+            </div>
+            <div class="card-body" id="dashboard-reports-container">
+              <div class="loading-placeholder">Loading recent reports...</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- How ScamRadar Works Info Cards -->
+        <div class="info-section">
+          <h2 class="section-title">How ScamRadar Works</h2>
+          <div class="info-grid">
+            <div class="info-card">
+              <div class="info-num">01</div>
+              <h3>AI Scam Analysis</h3>
+              <p>Paste any unexpected SMS, WhatsApp offer, or email. The local NLP engine evaluates pressure tactics, threats, and payment requests.</p>
+            </div>
+            <div class="info-card">
+              <div class="info-num">02</div>
+              <h3>Actionable Safety Tips</h3>
+              <p>Understand the specific red flags. Get instant advice on what NOT to do, where to verify, and official helpline protocols.</p>
+            </div>
+            <div class="info-card">
+              <div class="info-num">03</div>
+              <h3>Hyperlocal Community Shield</h3>
+              <p>Report the incident anonymously. Clustered reports alert neighbors in your locality on the interactive scam map.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Privacy & Safety Guarantee Card -->
+        <div class="privacy-banner-card">
+          <div class="privacy-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="privacy-content">
+            <h3>Strict Privacy and Safety Guardrails</h3>
+            <p>ScamRadar uses approximate neighborhood coordinates only (never exact street addresses). We never request or store sensitive financial details, passwords, PINs, or OTPs. AI evaluations represent advisory assessments, not guaranteed facts.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SECTION 2: AI SCAM CHECKER ================= -->
+      <section id="checker-view" class="view-panel">
+        <div class="page-intro">
+          <div class="badge-tag">AI Analysis Engine</div>
+          <h1 class="page-title">Check a Suspicious Message</h1>
+          <p class="page-desc">
+            Paste an unexpected SMS, WhatsApp alert, or job solicitation below. Our local explainable NLP engine identifies extortion patterns, impersonation, and fraudulent payment channels.
+          </p>
+        </div>
+
+        <div class="checker-container">
+          <!-- Input Card -->
+          <div class="checker-input-card">
+            <div class="input-header">
+              <label for="scam-text-input" class="input-label">Message Content</label>
+              <button class="btn-clear" id="btn-clear-input">Clear Text</button>
+            </div>
+
+            <textarea 
+              id="scam-text-input" 
+              class="scam-textarea" 
+              placeholder="Paste a suspicious message here..." 
+              rows="5"
+            ></textarea>
+
+            <!-- Quick Example Buttons -->
+            <div class="examples-toolbar">
+              <span class="examples-label">Try synthetic examples:</span>
+              <div class="example-chips">
+                <button class="chip-btn" id="btn-example-electricity">⚡ Electricity scam</button>
+                <button class="chip-btn" id="btn-example-job">💼 Fake job offer</button>
+                <button class="chip-btn" id="btn-example-delivery">📦 Delivery parcel</button>
+                <button class="chip-btn" id="btn-example-bank">🏦 Bank KYC alert</button>
+              </div>
+            </div>
+
+            <!-- Action Button & Loading Feedback -->
+            <div class="action-footer">
+              <button class="btn btn-primary btn-lg" id="btn-run-analysis">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Analyze with AI
+              </button>
+              <div class="privacy-micro-note">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Evaluated locally with explainable NLP. Never shared with 3rd-party ad trackers.
+              </div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading-state" id="checker-loading-state" style="display: none;">
+              <div class="loading-spinner"></div>
+              <div class="loading-step-text" id="loading-step-text">Analyzing message...</div>
+            </div>
+
+            <!-- Error message container -->
+            <div class="alert-error-box" id="checker-error-box" style="display: none;"></div>
+          </div>
+
+          <!-- Analysis Results Panel -->
+          <div class="analysis-results-card" id="analysis-results-card" style="display: none;">
+            
+            <!-- Result Header -->
+            <div class="result-header">
+              <div class="result-headline">
+                <div class="result-category-label" id="result-category">Scam Category</div>
+                <div class="risk-badge" id="result-risk-badge">
+                  <span class="risk-icon" id="result-risk-icon">⚠️</span>
+                  <span class="risk-text" id="result-risk-text">HIGH RISK</span>
+                </div>
+              </div>
+              <div class="risk-score-display">
+                <div class="score-number-wrap">
+                  <span class="score-val" id="result-score-val">90</span>
+                  <span class="score-max">/100</span>
+                </div>
+                <span class="score-title">Risk Score</span>
+              </div>
+            </div>
+
+            <!-- AI Assessment Disclaimer -->
+            <div class="disclaimer-chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <span>AI assessment — not guaranteed truth.</span>
+            </div>
+
+            <!-- Red Flags Section -->
+            <div class="result-section">
+              <h3 class="result-section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Detected Red Flags
+              </h3>
+              <div class="red-flags-list" id="result-red-flags"></div>
+            </div>
+
+            <!-- Why This Looks Suspicious -->
+            <div class="result-section">
+              <h3 class="result-section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Why This Looks Suspicious
+              </h3>
+              <p class="explanation-body" id="result-why-suspicious"></p>
+            </div>
+
+            <!-- Recommended Actions Checklist -->
+            <div class="result-section">
+              <h3 class="result-section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Recommended Safety Actions
+              </h3>
+              <ul class="recommendations-list" id="result-recommendations"></ul>
+            </div>
+
+            <!-- Action Buttons: Report Scam or Check Another -->
+            <div class="results-actions-bar">
+              <button class="btn btn-primary btn-lg" id="btn-report-this-scam">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                Report this scam to community
+              </button>
+              <button class="btn btn-secondary btn-lg" id="btn-check-another">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                Check another message
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SECTION 3: COMMUNITY REPORT FORM ================= -->
+      <section id="report-view" class="view-panel">
+        <div class="page-intro">
+          <div class="badge-tag">Community Action</div>
+          <h1 class="page-title">Report a Scam</h1>
+          <p class="page-desc">
+            Help warn citizens in your vicinity. Your report is logged anonymously to SQLite, updates dashboard metrics, and alerts neighbors on the interactive map.
+          </p>
+        </div>
+
+        <div class="report-form-container">
+          <form id="scam-report-form" class="report-form-card" novalidate>
+            
+            <!-- Success Message Container -->
+            <div class="form-feedback-banner success" id="report-success-banner" style="display: none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <div>
+                <strong>Report added successfully.</strong>
+                <p>Your report can help warn other people in your community.</p>
+              </div>
+            </div>
+
+            <!-- Error Message Container -->
+            <div class="form-feedback-banner error" id="report-error-banner" style="display: none;"></div>
+
+            <!-- Form Field: Category -->
+            <div class="form-group">
+              <label for="report-category" class="form-label">
+                Scam Category <span class="required-star">*</span>
+              </label>
+              <select id="report-category" class="form-control" required>
+                <option value="">-- Select Category --</option>
+                <option value="Electricity Impersonation">Electricity Impersonation</option>
+                <option value="Bank Impersonation">Bank Impersonation</option>
+                <option value="Job Scam">Job Scam / Task Fraud</option>
+                <option value="Fake Delivery">Fake Delivery / Postal Courier</option>
+                <option value="Prize Scam">Prize / Lottery Scam</option>
+                <option value="Investment Scam">Investment / Crypto Scam</option>
+                <option value="Phishing">Phishing / Credential Theft</option>
+                <option value="Other / Suspicious Message">Other / Suspicious Message</option>
+              </select>
+            </div>
+
+            <!-- Form Field: Description -->
+            <div class="form-group">
+              <label for="report-description" class="form-label">
+                Message / Description <span class="required-star">*</span>
+              </label>
+              <textarea 
+                id="report-description" 
+                class="form-control" 
+                rows="5" 
+                placeholder="Paste the suspicious text, link, or caller's claims..." 
+                required
+              ></textarea>
+              <span class="field-hint">Do not include your own personal credentials (OTP, passwords, or card numbers).</span>
+            </div>
+
+            <!-- Form Field: Approximate Area -->
+            <div class="form-group">
+              <label for="report-area" class="form-label">
+                Approximate Area / Locality <span class="required-star">*</span>
+              </label>
+              <select id="report-area" class="form-control" required>
+                <option value="">-- Select Approximate Neighborhood --</option>
+                <option value="Madhapur">Madhapur</option>
+                <option value="Banjara Hills">Banjara Hills</option>
+                <option value="Gachibowli">Gachibowli</option>
+                <option value="Ameerpet">Ameerpet</option>
+                <option value="Kukatpally">Kukatpally</option>
+                <option value="Secunderabad">Secunderabad</option>
+                <option value="Hitec City">Hitec City</option>
+                <option value="Charminar">Charminar</option>
+                <option value="Kondapur">Kondapur</option>
+                <option value="Begumpet">Begumpet</option>
+                <option value="Jubilee Hills">Jubilee Hills</option>
+                <option value="Dilsukhnagar">Dilsukhnagar</option>
+                <option value="Mehdipatnam">Mehdipatnam</option>
+                <option value="Manikonda">Manikonda</option>
+                <option value="Uppal">Uppal</option>
+              </select>
+              <span class="field-hint">Never enter your exact home or flat address. Approximate zone only.</span>
+            </div>
+
+            <!-- Hidden auto-evaluated risk attributes -->
+            <input type="hidden" id="report-risk-level" value="">
+            <input type="hidden" id="report-risk-score" value="">
+
+            <!-- Safety Checkbox -->
+            <div class="form-check-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="report-privacy-confirm" required checked>
+                <span>I confirm this report does NOT contain my passwords, bank OTPs, PINs, or sensitive private information.</span>
+              </label>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-action-group">
+              <button type="submit" class="btn btn-primary btn-lg" id="btn-submit-report">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                Submit Community Report
+              </button>
+              <button type="button" class="btn btn-secondary btn-lg" id="btn-cancel-report">
+                Cancel
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </section>
+
+      <!-- ================= SECTION 4: SCAM MAP ================= -->
+      <section id="map-view" class="view-panel">
+        <div class="page-intro">
+          <div class="badge-tag">Geographic Radar</div>
+          <h1 class="page-title">Interactive Scam Map</h1>
+          <p class="page-desc">
+            Visualizing reported scam patterns across approximate Hyderabad localities. Markers reflect risk assessment and are clearly designated as synthetic demo or community logs.
+          </p>
+        </div>
+
+        <div class="map-controls-bar">
+          <div class="filter-group">
+            <span class="filter-label">Filter Risk:</span>
+            <div class="filter-pills">
+              <button class="filter-pill active" data-filter="All">All Reports</button>
+              <button class="filter-pill pill-high" data-filter="HIGH RISK">High Risk</button>
+              <button class="filter-pill pill-medium" data-filter="MEDIUM RISK">Medium Risk</button>
+              <button class="filter-pill pill-watch" data-filter="WATCH">Watch</button>
+              <button class="filter-pill pill-recent" data-filter="Recent">Recent</button>
+            </div>
+          </div>
+          <div class="map-legend">
+            <span class="legend-item"><span class="legend-dot dot-high"></span> High Risk</span>
+            <span class="legend-item"><span class="legend-dot dot-medium"></span> Medium Risk</span>
+            <span class="legend-item"><span class="legend-dot dot-watch"></span> Watch</span>
+          </div>
+        </div>
+
+        <!-- Map Leaflet Canvas -->
+        <div class="map-container-card">
+          <div id="scam-leaflet-map" class="scam-map-canvas"></div>
+        </div>
+
+        <div class="map-footer-notice">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Locations are offset to neighborhood centers to protect user privacy. Never displays residential addresses.
+        </div>
+      </section>
+
+      <!-- ================= SECTION 5: COMMUNITY ALERTS ================= -->
+      <section id="alerts-view" class="view-panel">
+        <div class="page-intro">
+          <div class="badge-tag">Community Threat Intelligence</div>
+          <h1 class="page-title">Community Alerts</h1>
+          <p class="page-desc">
+            Algorithmic clusters of similar reported patterns by category and locality. We use responsible wording: reports represent community-submitted patterns, not verified legal convictions.
+          </p>
+        </div>
+
+        <div class="alerts-feed-card">
+          <div class="alerts-feed-header">
+            <h2 id="alerts-feed-title">Active Local Alerts</h2>
+            <button class="btn btn-secondary btn-sm" id="btn-refresh-alerts">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              Refresh Alerts
+            </button>
+          </div>
+          <div id="full-alerts-list" class="full-alerts-grid">
+            <div class="loading-placeholder">Loading community alerts...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SECTION 6: PROFILE / SETTINGS ================= -->
+      <section id="settings-view" class="view-panel">
+        <div class="page-intro">
+          <div class="badge-tag">Preferences & Privacy</div>
+          <h1 class="page-title">Settings & Privacy Controls</h1>
+          <p class="page-desc">
+            Configure your neighborhood alerts, review privacy policies, and understand ScamRadar data safety commitments.
+          </p>
+        </div>
+
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h3>Neighborhood Alert Preferences</h3>
+            <p class="settings-sub">Choose your primary watch zone for prioritized community alert notifications.</p>
+            
+            <div class="form-group">
+              <label for="pref-area" class="form-label">Primary Watch Locality</label>
+              <select id="pref-area" class="form-control">
+                <option value="Hyderabad (All Zones)">Hyderabad (All Zones)</option>
+                <option value="Madhapur">Madhapur</option>
+                <option value="Banjara Hills">Banjara Hills</option>
+                <option value="Gachibowli">Gachibowli</option>
+                <option value="Hitec City">Hitec City</option>
+                <option value="Secunderabad">Secunderabad</option>
+                <option value="Kukatpally">Kukatpally</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="pref-sensitivity" class="form-label">Alert Threshold</label>
+              <select id="pref-sensitivity" class="form-control">
+                <option value="all">All Alerts (High, Medium, Watch)</option>
+                <option value="medium" selected>High & Medium Risk Only</option>
+                <option value="high">High Risk Extortion Only</option>
+              </select>
+            </div>
+
+            <button class="btn btn-primary btn-md" id="btn-save-settings">Save Preferences</button>
+            <div id="settings-save-feedback" class="settings-feedback" style="display:none;">Preferences saved successfully!</div>
+          </div>
+
+          <div class="settings-card">
+            <h3>Privacy & Responsible AI Architecture</h3>
+            <ul class="privacy-bullet-list">
+              <li><strong>Zero Credential Storage:</strong> ScamRadar never stores or transmits bank passwords, OTPs, PINs, or financial credentials.</li>
+              <li><strong>Approximate Coordinates:</strong> Geocoded coordinates are mapped to general neighborhood centroids with random privacy jitter. Exact residential addresses are forbidden.</li>
+              <li><strong>Honest Local AI:</strong> Analysis uses a deterministic, rule-based NLP engine with weighted pattern scoring. We do not falsely claim to use black-box proprietary LLMs.</li>
+              <li><strong>Responsible Phrasing:</strong> Reports are described as "reported patterns" and "potential risks," never definitive proof of criminal guilt.</li>
+              <li><strong>Synthetic Seeding:</strong> Demo logs are explicitly labeled: <em>“Synthetic demo data — not real-world incident reports.”</em></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-bar" id="mobile-nav">
+      <button class="m-nav-btn active" data-tab="dashboard-view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Home</span>
+      </button>
+      <button class="m-nav-btn" data-tab="checker-view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>Check</span>
+      </button>
+      <button class="m-nav-btn" data-tab="map-view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
+        <span>Map</span>
+      </button>
+      <button class="m-nav-btn" data-tab="alerts-view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+        <span>Alerts</span>
+      </button>
+      <button class="m-nav-btn" data-tab="report-view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Report</span>
+      </button>
+    </nav>
+
+    <!-- Global Toast Notification Container -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  </div>
+
+  <!-- Leaflet JS Library -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Main Application Logic -->
+  <script src="/static/app.js"></script>
+</body>
+</html>
